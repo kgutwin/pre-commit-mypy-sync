@@ -9,7 +9,7 @@ description = "auto sync mypy pre-commit package requirements"
 readme = "README.md"
 license = { file = "LICENSE" }
 authors = [{ name = "Karl Gutwin" }]
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
     "PyYAML"
 ]
