@@ -1,0 +1,10 @@
+- id: mypy-requirements-sync
+  name: sync pre-commit mypy requirements
+  description: Keep package version numbers for mypy pre-commit hook in sync
+  entry: mypy-sync
+  args:
+    - "--in-place"
+  language: python
+  types: [file]
+  stages: [pre-commit, pre-merge-commit, manual]
+  pass_filenames: false

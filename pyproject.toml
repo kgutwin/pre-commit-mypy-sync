@@ -1,0 +1,18 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools", "wheel"]
+
+[project]
+name = "pre-commit-mypy-sync"
+version = "1.0.0"
+description = "auto sync mypy pre-commit package requirements"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Karl Gutwin" }]
+requires-python = ">=3.13"
+dependencies = [
+    "PyYAML"
+]
+
+[project.scripts]
+mypy-sync = "hooks.mypy_sync:main"
