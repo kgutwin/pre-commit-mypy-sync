@@ -119,8 +119,6 @@ def main() -> None:
     else:
         do(sys.stdout)
 
-    sys.exit(1)
-
 
 if __name__ == "__main__":
     main()
