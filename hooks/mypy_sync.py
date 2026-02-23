@@ -98,9 +98,7 @@ def main() -> None:
         help="pip install requirements from FILE",
     )
 
-    opts = argparser.parse_args(
-        ["-r", "requirements-dev.txt", "-r", "musicteam/requirements.txt", "--in-place"]
-    )
+    opts = argparser.parse_args()
 
     pip_args = []
     for req in opts.requirements or []:
