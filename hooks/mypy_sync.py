@@ -1,17 +1,15 @@
 #!/usr/bin/env python
 
+import argparse
 import importlib.metadata
 import shutil
+import subprocess
 import sys
 import tempfile
 from typing import IO
 from typing import Iterator
 
 import yaml
-
-package_versions = {
-    dist.metadata["Name"]: dist.version for dist in importlib.metadata.distributions()
-}
 
 
 class UpdateDependencies:
@@ -50,6 +48,11 @@ class UpdateDependencies:
 
 
 def do(outfp: IO[str]) -> None:
+    package_versions = {
+        dist.metadata["Name"]: dist.version
+        for dist in importlib.metadata.distributions()
+    }
+
     with open(".pre-commit-config.yaml") as fp:
         cfg = yaml.safe_load(fp)
 
@@ -66,13 +69,51 @@ def do(outfp: IO[str]) -> None:
         if name in package_versions:
             new_deps.append(f"{name}=={package_versions[name]}")
         else:
+            print(f"{name} not currently installed, skipping")
             new_deps.append(dep)
 
     outfp.writelines(UpdateDependencies(".pre-commit-config.yaml", new_deps))
 
 
 def main() -> None:
-    if sys.argv[-1] == "--in-place":
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument(
+        "--in-place",
+        "-i",
+        action="store_true",
+        help="Change .pre-commit-config.yaml file in place",
+    )
+    argparser.add_argument(
+        "--pip-install",
+        "-p",
+        action="append",
+        metavar="SPEC",
+        help="invoke `pip install SPEC`",
+    )
+    argparser.add_argument(
+        "--requirements",
+        "-r",
+        action="append",
+        metavar="FILE",
+        help="pip install requirements from FILE",
+    )
+
+    opts = argparser.parse_args(
+        ["-r", "requirements-dev.txt", "-r", "musicteam/requirements.txt", "--in-place"]
+    )
+
+    pip_args = []
+    for req in opts.requirements or []:
+        pip_args.extend(["-r", req])
+
+    for req in opts.pip_install or []:
+        pip_args.append(req)
+
+    if pip_args:
+        args = [sys.executable, "-m", "pip", "install"] + pip_args
+        subprocess.check_call(args)
+
+    if opts.in_place:
         with tempfile.NamedTemporaryFile(mode="w") as ofp:
             do(ofp)
             ofp.flush()
@@ -80,6 +121,8 @@ def main() -> None:
     else:
         do(sys.stdout)
 
-    
+    sys.exit(1)
+
+
 if __name__ == "__main__":
     main()

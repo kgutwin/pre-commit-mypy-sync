@@ -16,3 +16,5 @@ dependencies = [
 
 [project.scripts]
 mypy-sync = "hooks.mypy_sync:main"
+
+[tool.black]
