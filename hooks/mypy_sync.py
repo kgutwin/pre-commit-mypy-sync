@@ -127,7 +127,7 @@ def main() -> None:
                 if line.startswith("#") or line == "":
                     continue
 
-                if m := re.match(r"^(\S+)\s*==\s*(\S+)$"):
+                if m := re.match(r"^(\S+)\s*==\s*(\S+)$", line):
                     package_versions[m.group(1)] = m.group(2)
                 else:
                     raise ValueError(f"unable to parse requirement: {line}")
