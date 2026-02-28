@@ -2,6 +2,7 @@
 
 import argparse
 import importlib.metadata
+import re
 import shutil
 import subprocess
 import sys
@@ -47,12 +48,7 @@ class UpdateDependencies:
                 yield from self.handle(line)
 
 
-def do(outfp: IO[str]) -> None:
-    package_versions = {
-        dist.metadata["Name"]: dist.version
-        for dist in importlib.metadata.distributions()
-    }
-
+def do(outfp: IO[str], package_versions: dict[str, str]) -> None:
     with open(".pre-commit-config.yaml") as fp:
         cfg = yaml.safe_load(fp)
 
@@ -97,27 +93,59 @@ def main() -> None:
         metavar="FILE",
         help="pip install requirements from FILE",
     )
+    argparser.add_argument(
+        "--no-install",
+        "-N",
+        action="store_true",
+        help="skip pip install, parse requirements file directly",
+    )
 
     opts = argparser.parse_args()
 
-    pip_args = []
-    for req in opts.requirements or []:
-        pip_args.extend(["-r", req])
+    if not opts.no_install:
+        pip_args = []
+        for req in opts.requirements or []:
+            pip_args.extend(["-r", req])
 
-    for req in opts.pip_install or []:
-        pip_args.append(req)
+        for req in opts.pip_install or []:
+            pip_args.append(req)
 
-    if pip_args:
-        args = [sys.executable, "-m", "pip", "install"] + pip_args
-        subprocess.check_call(args)
+        if pip_args:
+            args = [sys.executable, "-m", "pip", "install"] + pip_args
+            subprocess.check_call(args)
+
+        package_versions = {
+            dist.metadata["Name"]: dist.version
+            for dist in importlib.metadata.distributions()
+        }
+
+    elif opts.requirements:
+        package_versions = {}
+        for req in opts.requirements:
+            for line in open(req):
+                line = line.strip()
+                if line.startswith("#") or line == "":
+                    continue
+
+                if m := re.match(r"^(\S+)\s*==\s*(\S+)$"):
+                    package_versions[m.group(1)] = m.group(2)
+                else:
+                    raise ValueError(f"unable to parse requirement: {line}")
+
+    else:
+        # use the current installed packages
+        package_versions = {
+            dist.metadata["Name"]: dist.version
+            for dist in importlib.metadata.distributions()
+        }
 
     if opts.in_place:
         with tempfile.NamedTemporaryFile(mode="w") as ofp:
-            do(ofp)
+            do(ofp, package_versions)
             ofp.flush()
             shutil.copy(ofp.file.name, ".pre-commit-config.yaml")
     else:
-        do(sys.stdout)
+        do(sys.stdout, package_versions)
 
 
 if __name__ == "__main__":
